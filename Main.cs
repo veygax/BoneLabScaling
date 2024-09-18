@@ -2,6 +2,10 @@
 using MelonLoader;
 using BoneLib.BoneMenu;
 using Color = UnityEngine.Color;
+using Main = BoneLabScaling.Main;
+
+[assembly: MelonInfo(typeof(Main), "Scaling", "1.0.0", "VeygaX")]
+[assembly: MelonGame("Stress Level Zero", "BONELAB")]
 
 namespace BoneLabScaling;
 

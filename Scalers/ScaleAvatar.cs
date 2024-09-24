@@ -16,21 +16,10 @@ namespace BoneLabScaling.Avatar;
 internal class AvatarScale
 {
     public static float scale = 1f;
-    /*private static PlayerRefs _playerRefsInstance;
 
-    [HarmonyPatch(typeof(PlayerRefs))]
-    [HarmonyPatch(nameof(PlayerRefs.Awake))]
-    private static class PlayerRefsAwakePatch
-    {
-        private static void Postfix(PlayerRefs __instance)
-        {
-            // Store the instance for later use
-            _playerRefsInstance = __instance;
-#if DEBUG
-            MelonLogger.Msg("BodyVitals instance captured.");
-#endif
-        }
-    }*/
+    private static GameObject gameObject;
+
+    private static Dictionary<GameObject, Vector3> originalScales = new Dictionary<GameObject, Vector3>();
 
     public static void ScaleAvatar()
     {
@@ -39,18 +28,23 @@ internal class AvatarScale
         {
             Action<GameObject> action = delegate (GameObject obj)
             {
-                GameObject gameObject = UnityEngine.Object.Instantiate(obj);
+                gameObject = UnityEngine.Object.Instantiate(obj);
                 Vector3 localScale = gameObject.transform.localScale;
                 localScale.x *= scale;
                 localScale.y *= scale;
                 localScale.z *= scale;
                 gameObject.transform.localScale = localScale;
-                gameObject.transform.parent = ((Component)(object)Player.RigManager).transform;
+                gameObject.transform.parent = Player.RigManager.transform;
                 gameObject.transform.localPosition = Vector3.zero;
                 Il2CppSLZ.VRMK.Avatar componentInChildren = gameObject.GetComponentInChildren<Il2CppSLZ.VRMK.Avatar>();
                 foreach (SkinnedMeshRenderer item in componentInChildren.hairMeshes)
                 {
                     item.enabled = false;
+                }
+
+                if (!originalScales.ContainsKey(gameObject))
+                {
+                    originalScales[gameObject] = gameObject.transform.localScale;
                 }
 #if DEBUG
                 MelonLogger.Msg("Changed scale to " + scale + "x");
@@ -69,5 +63,16 @@ internal class AvatarScale
 #endif
         }
 
+    }
+
+    public static void ResetScale()
+    {
+        if (gameObject != null && originalScales.ContainsKey(gameObject))
+        {
+            gameObject.transform.localScale = originalScales[gameObject];
+#if DEBUG
+            MelonLogger.Msg($"Reset scale of avatar to original scale.");
+#endif
+        }
     }
 }

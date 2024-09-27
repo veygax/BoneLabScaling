@@ -3,6 +3,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>Scaling</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
 	<Reference Include="Assembly-CSharp">
@@ -37,6 +38,6 @@
 	</Reference>
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="ECHO Copying mod to $(BONELAB_DIR)\Mods&#xD;&#xA;COPY &quot;$(TargetPath)&quot; &quot;$(BONELAB_DIR)\Mods\$(ProjectName).dll&quot;" />
+    <Exec Command="ECHO Copying mod to $(BONELAB_DIR)\Mods&#xD;&#xA;COPY &quot;$(TargetPath)&quot; &quot;$(BONELAB_DIR)\Mods\$(AssemblyName).dll&quot;" />
   </Target>
 </Project>

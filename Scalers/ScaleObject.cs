@@ -70,12 +70,12 @@ internal class ObjectScale
                 originalScales[rb.gameObject] = rb.transform.localScale;
             }
 
-            Vector3 localScale = rb.transform.localScale;
-            localScale.x *= scale;
-            localScale.y *= scale;
-            localScale.z *= scale;
-            rb.transform.localScale = localScale;
-            rb.mass *= scale * scale * scale;
+            // Fixes bug where scaling was being incremented and not set
+            Vector3 originalScale = originalScales[rb.gameObject];
+
+            Vector3 newScale = originalScale * scale;
+            rb.transform.localScale = newScale;
+            rb.mass = rb.mass / (originalScale.x * originalScale.y * originalScale.z) * (newScale.x * newScale.y * newScale.z);
 
             if (hand == "left")
             {
@@ -91,6 +91,7 @@ internal class ObjectScale
             Main.BoneMenuNotif(NotificationType.Error, $"No object found in {hand} hand.");
         }
     }
+
 
 
     public static void ResetScale()

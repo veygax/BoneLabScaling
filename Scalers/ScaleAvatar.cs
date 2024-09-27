@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppSLZ.Bonelab;
 using UnityEngine;
+using Il2CppSLZ.Marrow;
+using Il2CppSystem.Numerics;
 
 namespace BoneLabScaling.Avatar;
 
@@ -17,34 +19,25 @@ internal class AvatarScale
 {
     public static float scale = 1f;
 
-    private static GameObject gameObject;
+    private static GameObject avatarObject;
 
-    private static Dictionary<GameObject, Vector3> originalScales = new Dictionary<GameObject, Vector3>();
 
     public static void ScaleAvatar()
     {
         AvatarCrate crate;
         if (AssetWarehouse.Instance.TryGetCrate(Player.RigManager._avatarCrate._barcode, out crate))
         {
-            Action<GameObject> action = delegate (GameObject obj)
+            Action<GameObject> action = delegate(GameObject obj)
             {
-                gameObject = UnityEngine.Object.Instantiate(obj);
-                Vector3 localScale = gameObject.transform.localScale;
-                localScale.x *= scale;
-                localScale.y *= scale;
-                localScale.z *= scale;
-                gameObject.transform.localScale = localScale;
-                gameObject.transform.parent = Player.RigManager.transform;
-                gameObject.transform.localPosition = Vector3.zero;
-                Il2CppSLZ.VRMK.Avatar componentInChildren = gameObject.GetComponentInChildren<Il2CppSLZ.VRMK.Avatar>();
+                avatarObject = UnityEngine.Object.Instantiate(obj);
+                avatarObject.transform.localScale = new Vector3(scale, scale, scale);
+                avatarObject.transform.parent = Player.RigManager.transform;
+                avatarObject.transform.localPosition = Vector3.zero;
+                Il2CppSLZ.VRMK.Avatar componentInChildren =
+                    avatarObject.GetComponentInChildren<Il2CppSLZ.VRMK.Avatar>();
                 foreach (SkinnedMeshRenderer item in componentInChildren.hairMeshes)
                 {
                     item.enabled = false;
-                }
-
-                if (!originalScales.ContainsKey(gameObject))
-                {
-                    originalScales[gameObject] = gameObject.transform.localScale;
                 }
 #if DEBUG
                 MelonLogger.Msg("Changed scale to " + scale + "x");
@@ -53,6 +46,33 @@ internal class AvatarScale
                 componentInChildren.RefreshBodyMeasurements();
                 Player.RigManager.SwitchAvatar(componentInChildren);
                 PlayerRefs.Instance._bodyVitals.PROPEGATE();
+
+                PhysicsRig physrig = BoneLib.Player.GetPhysicsRig();
+                PullCordDevice bodyLog = physrig.GetComponentInChildren<PullCordDevice>();
+
+                if (bodyLog != null)
+                {
+                    bodyLog.transform.localScale = new Vector3(scale, scale, scale);
+                }
+
+                foreach (var slot in BoneLib.Player.RigManager.inventory.bodySlots)
+                {
+                    slot.transform.localScale = new Vector3(scale, scale, scale);
+                    if (slot.name.Equals("BeltLf1"))
+                    {
+                        InventoryAmmoReceiver ammoReceiver = slot.GetComponentInChildren<InventoryAmmoReceiver>();
+
+                        if (ammoReceiver == null)
+                        {
+                            continue;
+                        }
+
+                        foreach (var mag in ammoReceiver._magazineArts)
+                        {
+                            mag.transform.localScale = new Vector3(scale, scale, scale);
+                        }
+                    }
+                }
             };
             crate.LoadAsset(action);
         }
@@ -67,11 +87,63 @@ internal class AvatarScale
 
     public static void ResetScale()
     {
-        if (gameObject != null && originalScales.ContainsKey(gameObject))
+        // This is the poorest way of doing it, but it works.
+        AvatarCrate crate;
+        if (AssetWarehouse.Instance.TryGetCrate(Player.RigManager._avatarCrate._barcode, out crate))
         {
-            gameObject.transform.localScale = originalScales[gameObject];
+            Action<GameObject> action = delegate(GameObject obj)
+            {
+                avatarObject = UnityEngine.Object.Instantiate(obj);
+                avatarObject.transform.localScale = new Vector3(1f, 1f, 1f);
+                avatarObject.transform.parent = Player.RigManager.transform;
+                avatarObject.transform.localPosition = Vector3.zero;
+                Il2CppSLZ.VRMK.Avatar componentInChildren =
+                    avatarObject.GetComponentInChildren<Il2CppSLZ.VRMK.Avatar>();
+                foreach (SkinnedMeshRenderer item in componentInChildren.hairMeshes)
+                {
+                    item.enabled = false;
+                }
 #if DEBUG
-            MelonLogger.Msg($"Reset scale of avatar to original scale.");
+                MelonLogger.Msg("Changed scale to " + scale + "x");
+#endif
+                componentInChildren.PrecomputeAvatar();
+                componentInChildren.RefreshBodyMeasurements();
+                Player.RigManager.SwitchAvatar(componentInChildren);
+                PlayerRefs.Instance._bodyVitals.PROPEGATE();
+
+                PhysicsRig physrig = BoneLib.Player.GetPhysicsRig();
+                PullCordDevice bodyLog = physrig.GetComponentInChildren<PullCordDevice>();
+
+                if (bodyLog != null)
+                {
+                    bodyLog.transform.localScale = new Vector3(1f, 1f, 1f);
+                }
+
+                foreach (var slot in BoneLib.Player.RigManager.inventory.bodySlots)
+                {
+                    slot.transform.localScale = new Vector3(1f, 1f, 1f);
+                    if (slot.name.Equals("BeltLf1"))
+                    {
+                        InventoryAmmoReceiver ammoReceiver = slot.GetComponentInChildren<InventoryAmmoReceiver>();
+
+                        if (ammoReceiver == null)
+                        {
+                            continue;
+                        }
+
+                        foreach (var mag in ammoReceiver._magazineArts)
+                        {
+                            mag.transform.localScale = new Vector3(1f, 1f, 1f);
+                        }
+                    }
+                }
+            };
+            crate.LoadAsset(action);
+        }
+        else
+        {
+#if DEBUG
+            MelonLogger.Msg("Failed to find avatar crate.");
 #endif
         }
     }
